@@ -18,11 +18,13 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[road_undistorted]: ./undistorted/undistorted-0.jpg "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
+[road_undistorted]: ./undistorted/undistorted-0.jpg "Undistorted Road Image"
+[binary_image]: ./binary/binary-0.jpg "Binary Image"
+[find_points]: ./find_points/find_points-7.jpg "Finding Points"
+[warped]: ./warped/warped-7.jpg "Warped Image"
+[painted_lanes]: ./painted_lanes/painted_lanes-3.jpg "Painted Lanes"
+[curvature_formula]: ./curvature_formula.png "Curvature Formula"
+[overlayed_image]: ./overlayed/overlayed-0.jpg "Overlayed Image"
 [video1]: ./project_video.mp4 "Video"
 
 ---
@@ -52,74 +54,73 @@ First tested went though development of pipeline on test images.
 
 #### Undistort Source Images
 
-Undistorted images 
+Undistorted images using calibration and distortion coefficients created by the camera calibration step.
 
-![undistorted image][road_undistorted]
+![alt_text][road_undistorted]
 
-#### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
+#### Generate a Clean Binary Image
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+I used a combination of color and gradient thresholds to generate a binary image. In my notebook I visualized x, y, 
+direction, and magnitude gradient thresholds. Then visualized RGB and HLS Color thresholds. 
 
-![alt text][image3]
+Using a combination of `x` amd `y` gradient thresholds and the `saturation` channel from the HLS color space.
 
-#### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+![alt text][binary_image]
 
-```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-```
+#### Perspective Transform
 
-This resulted in the following source and destination points:
+This is the meat of the project. I have a `warp()` function the warps the binary image to give a birds eye view of the 
+lane lines. The `warp()` function takes the binary image with source `src` and destination `dst` points. 
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
+To determine the source points I used an image from a straight road and marked 4 visible corners of the lane that I
+wanted to see in the birds eye. Because of the perspective of the lens this would polygon will be a Trapezoid.
 
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+![alt_text][find_points]
 
-![alt text][image4]
+Destination was simple, were I wanted to warp to. This should make a square. I used an offset from the right and left
+so that I could view the curves.
 
-#### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
+To validate my source points were correct the straight lane lines should be parallel.   
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+![alt text][warped]
 
-![alt text][image5]
+#### Finding Lanes
 
-#### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
+Used a convolutional sliding window for each half of the warped image to find groups of matching pixels. Visualized 
+results by overlaying the windows on the warped image.
 
-I did this in lines # through # in my code in `my_other_file.py`
+![alt text][painted_lanes]
 
-#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
+#### Curvature Radius Calculation
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+First step was to define a mapping from pixels meters in the x and y directions. Using that scale, fit a polynomial,
+then the calculated the radius with the following formula:
 
-![alt text][image6]
+![alt text][curvature_formula]
+
+#### Filled Lane, unwarped and overlayed on undistorted image   
+
+Using fitted lanes generated in previous steps, filled in lane, unwarped and overlayed on original undistorted image:
+
+![alt text][overlayed_image]
 
 ---
 
 ### Pipeline (video)
 
-#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
+#### Video Pipeline
 
-Here's a [link to my video result](./project_video.mp4)
+Used the functions developed in the previous sections for the single image and created a new function that only takes
+a single image as input. This allows the moviepy library to pump a raw undistorted image though the pipline.
+
+Here's a [Final Project Video](./overlayed_project_video.mp4)
 
 ---
 
 ### Discussion
 
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+Some of the challenges that I faced was getting the source points right for warping the image and the correct thresholds.
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+Some of the lane lines were dirty and caused large gaps in the lines. Some sections of the road are very light and 
+tend to cause a flicker in the lane following.
